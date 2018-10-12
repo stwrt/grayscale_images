@@ -3,14 +3,12 @@
 
 #include <cuda.h>
 #include <vector_types.h>
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
 
 #include "bitmap_image.hpp"
 
 using namespace std;
 
-__global__ void color_to_grey(int3 *input_image, int3 *output_image, int width, int height)
+__global__ void color_to_grey(uchar3 *input_image, uchar3 *output_image, int width, int height)
 {
     int col = threadIdx.x + blockIdx.x * blockDim.x;
     int row = threadIdx.y + blockIdx.y * blockDim.y;
@@ -18,7 +16,7 @@ __global__ void color_to_grey(int3 *input_image, int3 *output_image, int width, 
     if(col < width && row < height)
     {
         int pos = row * width + col;
-        output_image[pos] = { int(input_image[pos].x * 0.30), int(input_image[pos].y * 0.5), int(input_image[pos].z * 0.11)};
+        output_image[pos].x = static_cast<unsigned char>(input_image[pos].x * 0.2126f + input_image[pos].y * 0.7125f + input_image[pos].z * 0.0722f);
     }
 }
 
@@ -36,10 +34,11 @@ int main()
     int height = bmp.height();
     int width = bmp.width();
     
+    cout << "image dimensions" << endl;
     cout << "height " << height << " width " << width << endl;
 
     //Transform image into vector of doubles
-    vector<int3> input_image;
+    vector<uchar3> input_image;
     rgb_t color;
     for(int x = 0; x < width; x++)
     {
@@ -50,10 +49,10 @@ int main()
         }
     }
 
-    vector<int3> output_image(input_image.size());
+    vector<uchar3> output_image(input_image.size());
 
-    int3 *d_in, *d_out;
-    int img_size = (input_image.size() * sizeof(int) * 3);
+    uchar3 *d_in, *d_out;
+    int img_size = (input_image.size() * sizeof(char) * 3);
     cudaMalloc(&d_in, img_size);
     cudaMalloc(&d_out, img_size);
 
@@ -66,8 +65,8 @@ int main()
     color_to_grey<<< dimGrid , dimBlock >>> (d_in, d_out, width, height);
 
     cudaMemcpy(output_image.data(), d_out, img_size, cudaMemcpyDeviceToHost);
-
-
+    
+    
     //Set updated pixels
     for(int x = 0; x < width; x++)
     {
@@ -77,7 +76,7 @@ int main()
             bmp.set_pixel(x, y, output_image[pos].x, output_image[pos].y, output_image[pos].z);
         }
     }
-
+    
     bmp.save_image("./grey_scaled.bmp");
 
     cudaFree(d_in);

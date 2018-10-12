@@ -9,7 +9,7 @@ Convert photos from RGB to black and white.
 ## How to compile
 
 ```
-nvcc --std=c++11 rgb_bw.cu -o rgb_bw
+nvcc --std=c++11 grayscale.cu -o grayscale
 ```
 
 

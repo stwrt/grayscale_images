@@ -79,7 +79,7 @@ int main()
         }
     }
     
-    bmp.save_image("./grey_scaled.bmp");
+    bmp.save_image("./grayscaled.bmp");
 
     cudaFree(d_in);
     cudaFree(d_out);
